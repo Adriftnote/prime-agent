@@ -90,4 +90,15 @@ Migration reuses an equal or newer managed release. It also checks the captured 
 
 Before reusing a compiled release, the bridge checks the installer's OS/architecture compatibility result and probes the executable's version. Command handoff captures the npm link and creates the native link exclusively, so a concurrent npm command wins instead of being overwritten. The public path can be briefly absent during this one-time transfer. If abrupt termination prevents restoration, the captured command remains under the adjacent `.prime-agent-link-*` directory for recovery; the versioned application and user data remain intact.
 
-Compiled self-update and rollback are handled by the final layer of the rollout. Homebrew packaging remains separate work.
+Failed automatic migrations retry after 24 hours; `PRIME_AGENT_MIGRATE_RETRY=1` retries immediately. Homebrew packaging remains separate work.
+
+## Updates and rollback
+
+Run `prime-agent update` or `/update` to install the latest version on the current stable or beta channel. Managed compiled installations require a matching platform entry in the release manifest and verify its SHA-256 against both the release checksums and downloaded archive. Failed downloads or validation leave the current executable and assets active. Unmanaged archives must be updated through their original installer.
+
+Updates retain the previous release, preserve user configuration and sessions, and use the existing busy-session confirmation and daemon restart coordination. Relaunches resolve the stable launcher after activation, so the new process runs the updated application. The installer checks that the active release has not changed since the update was planned and serializes activation with its installation lock.
+
+Run `prime-agent update --rollback` or `/update --rollback` to restore the previous local release without downloading anything. Its executable and assets are validated before switching. A second rollback restores the release you just left. Rollback requires a retained release and applies only to managed compiled installations. `--force` permits reinstalling the version selected by the release channel.
+
+Normal interruption during rollback finishes retaining the release being left. A forced kill between the two launcher changes can leave both launchers pointing to the restored release. The application still runs and both release directories remain, but another rollback requires manually restoring the previous link after confirming the installer is dead and clearing its stale lock.
+
