@@ -736,6 +736,9 @@ export class AgentSession {
 		getChildOwner: (child) => child._children,
 		getParentReplyCount: (child) => child._childState.replyCount,
 		getChildSessionDir: (child) => child._rlmSessionDir,
+		listRlmSubagents: () => this.listRlmSubagents(),
+		deleteRlmSubagent: (target) => this.deleteRlmSubagent(target),
+		registerRlmChildSession: (id, child) => this.registerRlmChildSession(id, child),
 		resolveModel: (reference, target) => this._resolveRlmSubagentModel(reference, target),
 		createSessionDir: () => this._createChildRlmSessionDir(),
 		createRuntimeOptions: (request) => this._createRlmSubagentRuntimeOptions(request),
@@ -1050,6 +1053,7 @@ export class AgentSession {
 			{
 				sessionManager: this.sessionManager,
 				settingsManager: this.settingsManager,
+				getRlmMaxDepthStatus: () => this.getRlmMaxDepthStatus(),
 				refreshPrompt: (preserveExtensionPrompt) => {
 					const oldBase = this._baseSystemPrompt;
 					this._baseSystemPrompt = this._rebuildSystemPrompt(this.getActiveToolNames());
@@ -2799,13 +2803,14 @@ export class AgentSession {
 		return this._disposeAsyncPromise;
 	}
 
-	private async _disposeAsyncOnce(kernelSnapshot: boolean): Promise<void> {
+	private _disposeAsyncOnce(kernelSnapshot: boolean): Promise<void> {
 		// Flush kernels/traces for both still-running and retained children; the sync
 		// dispose() below only tears them down synchronously.
-		await this._children.disposeAsync();
-		await this._kernel.dispose(kernelSnapshot);
-		this.dispose();
-		await this._disposeCallbacksPromise;
+		return this._children.disposeAsync(async () => {
+			await this._kernel.dispose(kernelSnapshot);
+			this.dispose();
+			await this._disposeCallbacksPromise;
+		});
 	}
 
 	private _startDisposeCallbacks(): Promise<void> {
