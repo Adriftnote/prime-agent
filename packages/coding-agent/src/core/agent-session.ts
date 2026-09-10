@@ -1136,6 +1136,8 @@ export class AgentSession {
 				sessionManager: this.sessionManager,
 				resourceLoader: this._resourceLoader,
 				modelRegistry: this._modelRegistry,
+				getModelRegistry: () => this.modelRegistry,
+				getPromptTemplates: () => this.promptTemplates,
 				getAgentMessageController: () => this._agentMessageController,
 				refreshCurrentModel: () => this._refreshCurrentModelFromRegistry(),
 				sendCustomMessage: (message, options) => this.sendCustomMessage(message, options),
@@ -1238,7 +1240,7 @@ export class AgentSession {
 		this._tools.replaceAcpMcpServers(servers, ownerId);
 	}
 
-	async releaseAcpMcpServers(ownerId: string, serverNames: readonly string[]): Promise<void> {
+	releaseAcpMcpServers(ownerId: string, serverNames: readonly string[]): Promise<void> {
 		return this._tools.releaseAcpMcpServers(ownerId, serverNames);
 	}
 
@@ -2806,11 +2808,12 @@ export class AgentSession {
 	private _disposeAsyncOnce(kernelSnapshot: boolean): Promise<void> {
 		// Flush kernels/traces for both still-running and retained children; the sync
 		// dispose() below only tears them down synchronously.
-		return this._children.disposeAsync(async () => {
-			await this._kernel.dispose(kernelSnapshot);
-			this.dispose();
-			await this._disposeCallbacksPromise;
-		});
+		return this._children.disposeAsync(() =>
+			this._kernel.dispose(kernelSnapshot, () => {
+				this.dispose();
+				return this._disposeCallbacksPromise;
+			}),
+		);
 	}
 
 	private _startDisposeCallbacks(): Promise<void> {
@@ -5700,8 +5703,11 @@ export class AgentSession {
 		this._extensions.setExecEnvProvider(provider);
 	}
 
-	async bindExtensions(bindings: ExtensionBindings): Promise<void> {
-		return this._extensions.bindExtensions(bindings);
+	bindExtensions(bindings: ExtensionBindings): Promise<void> {
+		return this._extensions.bindExtensions({
+			...bindings,
+			shutdownHandler: bindings.shutdownHandler?.bind(this),
+		});
 	}
 
 	private _refreshCurrentModelFromRegistry(): void {
@@ -5822,7 +5828,7 @@ export class AgentSession {
 		}
 	}
 
-	async reload(): Promise<void> {
+	reload(): Promise<void> {
 		return this._extensions.reload();
 	}
 
