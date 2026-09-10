@@ -1138,6 +1138,7 @@ export class AgentSession {
 				modelRegistry: this._modelRegistry,
 				getModelRegistry: () => this.modelRegistry,
 				getPromptTemplates: () => this.promptTemplates,
+				bindShutdownHandler: (handler) => handler?.bind(this),
 				getAgentMessageController: () => this._agentMessageController,
 				refreshCurrentModel: () => this._refreshCurrentModelFromRegistry(),
 				sendCustomMessage: (message, options) => this.sendCustomMessage(message, options),
@@ -5704,10 +5705,7 @@ export class AgentSession {
 	}
 
 	bindExtensions(bindings: ExtensionBindings): Promise<void> {
-		return this._extensions.bindExtensions({
-			...bindings,
-			shutdownHandler: bindings.shutdownHandler?.bind(this),
-		});
+		return this._extensions.bindExtensions(bindings);
 	}
 
 	private _refreshCurrentModelFromRegistry(): void {
