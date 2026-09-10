@@ -1227,7 +1227,10 @@ export class AgentSession {
 				isContinuationScheduled: () => this._continuation.isScheduled,
 				cancelContinuation: () => this._cancelPostCompactionContinue(),
 			},
-			config,
+			{
+				serializedRefine: config.serializedRefine,
+				autoRefineReviewer: config.autoRefineReviewer?.bind(this),
+			},
 		);
 		this._serviceTierPreference = config.serviceTierPreference ?? config.agent.state.serviceTier;
 		this._scopedModels = config.scopedModels ?? [];
