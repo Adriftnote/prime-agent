@@ -1,3 +1,7 @@
+# Fork ops
+
+- Harness improvement (Continual `/refine` vs gates): [docs/ops/harness-improvement.md](docs/ops/harness-improvement.md)
+
 # Development Rules
 
 ## Conversational Style
